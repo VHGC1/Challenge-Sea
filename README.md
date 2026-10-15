@@ -17,16 +17,6 @@ docker compose up --build
 To run the app from the IDE instead, start only the dependencies with `docker compose up postgres elasticsearch` and run
 `ChallengeSeaApplication` with `ADMIN_PASSWORD` set.
 
-## Test frontend
-
-A small Vite + React app in `frontend/` to click through the flow: client wizard, analyst search
-and review, admin users. Its dev server proxies the API paths to `localhost:8080`, so the backend
-needs no CORS.
-
-```bash
-cd frontend && npm install && npm run dev   # http://localhost:5173
-```
-
 ## A walk through the flow
 
 ```bash
