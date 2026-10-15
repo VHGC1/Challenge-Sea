@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<ruleset name="robotictech"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>
+        Bug-finding rules for the RoboticTech Spring Boot APIs. Every rule is an error (pmd:check).
+        Formatting is Spotless's job, so no style rules here. A hit that is safe gets
+        "// NOPMD - reason" on that line; an unused NOPMD fails too (UnnecessaryWarningSuppression).
+    </description>
+
+    <rule ref="category/java/errorprone.xml">
+        <!-- Best-effort boundaries (after-commit side effects, per-item skips) catch Exception on purpose -->
+        <exclude name="AvoidCatchingGenericException"/>
+        <!-- Style: magic numbers, repeated string literals -->
+        <exclude name="AvoidLiteralsInIfCondition"/>
+        <exclude name="AvoidDuplicateLiterals"/>
+        <!-- Enums implementing a library interface expose field "option" through method option() -->
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
+        <!-- Style: flags i++ in an argument and the while ((line = reader.readLine()) != null) idiom -->
+        <exclude name="AssignmentInOperand"/>
+        <!-- Flags legitimate assignments such as x = condition ? y : null -->
+        <exclude name="NullAssignment"/>
+        <!-- Exceptions and DTOs travel as JSON, never through Java serialization -->
+        <exclude name="MissingSerialVersionUID"/>
+    </rule>
+
+    <rule ref="category/java/bestpractices.xml">
+        <!-- Parameterized SLF4J/Log4j2 calls already skip formatting below the log level -->
+        <exclude name="GuardLogStatement"/>
+        <!-- Style -->
+        <exclude name="OnDemandImport"/>
+        <exclude name="OneDeclarationPerLine"/>
+        <exclude name="UseVarargs"/>
+        <exclude name="AvoidReassigningParameters"/>
+        <!-- Single-method extension points (resolvers, providers) are implemented by beans, not lambdas -->
+        <exclude name="ImplicitFunctionalInterface"/>
+        <!-- Re-added below with the JPA callbacks ignored -->
+        <exclude name="UnusedPrivateMethod"/>
+    </rule>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod">
+        <properties>
+            <!-- PMD's defaults plus the JPA entity callbacks, which Hibernate calls by reflection -->
+            <property name="ignoredAnnotations" value="java.lang.Deprecated,jakarta.annotation.PostConstruct,jakarta.annotation.PreDestroy,javax.annotation.PostConstruct,javax.annotation.PreDestroy,lombok.EqualsAndHashCode.Include,jakarta.persistence.PrePersist,jakarta.persistence.PreUpdate,jakarta.persistence.PreRemove,jakarta.persistence.PostLoad,jakarta.persistence.PostPersist,jakarta.persistence.PostUpdate,jakarta.persistence.PostRemove"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/multithreading.xml">
+        <!-- Flags every local HashMap, not only shared ones -->
+        <exclude name="UseConcurrentHashMap"/>
+        <!-- J2EE rule; a Spring Boot service may sleep between retries -->
+        <exclude name="DoNotUseThreads"/>
+    </rule>
+
+    <rule ref="category/java/security.xml"/>
+
+    <!-- Design: only the rules that point at a bug or dead code, not at size or complexity -->
+    <rule ref="category/java/design.xml/AvoidRethrowingException"/>
+    <rule ref="category/java/design.xml/AvoidThrowingNewInstanceOfSameException"/>
+    <rule ref="category/java/design.xml/AvoidThrowingNullPointerException"/>
+    <rule ref="category/java/design.xml/DoNotExtendJavaLangError"/>
+    <rule ref="category/java/design.xml/ExceptionAsFlowControl"/>
+    <rule ref="category/java/design.xml/MutableStaticState"/>
+    <rule ref="category/java/design.xml/SimplifyConditional"/>
+    <rule ref="category/java/design.xml/UselessOverridingMethod"/>
+
+    <!-- Conventions from AGENTS.md. Each one has a self-check in src/test (PmdRulesTest) -->
+
+    <rule name="NoFieldInjection"
+          language="java"
+          message="Inject through the constructor: no @Autowired or @Value on a field"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Injected fields cannot be set in a unit test without reflection. Take the dependency
+            (or the @Value property) as a constructor parameter into a private final field.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//FieldDeclaration[
+    pmd-java:hasAnnotation('org.springframework.beans.factory.annotation.Autowired')
+    or pmd-java:hasAnnotation('org.springframework.beans.factory.annotation.Value')]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="ProxyAnnotationOnPrivateMethod"
+          language="java"
+          message="@Transactional and @Async do nothing on a private method: Spring's proxy cannot intercept it"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Spring applies @Transactional and @Async through a proxy, which only sees calls to
+            non-private methods from another bean. On a private method the annotation is silently ignored.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//MethodDeclaration[@Visibility = 'private'][
+    pmd-java:hasAnnotation('org.springframework.transaction.annotation.Transactional')
+    or pmd-java:hasAnnotation('jakarta.transaction.Transactional')
+    or pmd-java:hasAnnotation('org.springframework.scheduling.annotation.Async')]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="RestControllerWithoutTag"
+          language="java"
+          message="Add a class-level @Tag(name, description) so the controller is grouped in Swagger UI"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Every @RestController gets a class-level OpenAPI @Tag; without it its endpoints land in
+            Swagger's default group with a generated name.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//ClassDeclaration[
+    pmd-java:hasAnnotation('org.springframework.web.bind.annotation.RestController')
+    and not(pmd-java:hasAnnotation('io.swagger.v3.oas.annotations.tags.Tag'))]
+]]></value>
+            </property>
+        </properties>
+    </rule>
+</ruleset>

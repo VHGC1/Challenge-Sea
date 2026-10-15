@@ -1,0 +1,22 @@
+#!/bin/sh
+# Formats the staged .java files with Spotless (palantir-java-format) and stages the result.
+# Install once per clone: git config core.hooksPath .githooks
+# CI runs spotless:check too, so a commit made with --no-verify still fails the PR.
+set -e
+
+files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.java')
+[ -z "$files" ] && exit 0
+
+# Re-staging a file that also has unstaged edits would commit those edits too
+partial=$(git diff --name-only -- $files)
+if [ -n "$partial" ]; then
+    echo "pre-commit: these files have unstaged changes; stage or stash them first:" >&2
+    echo "$partial" >&2
+    exit 1
+fi
+
+# spotlessFiles takes regexes matched against absolute paths; the "." in a path still matches itself
+root=$(git rev-parse --show-toplevel)
+patterns=$(for f in $files; do echo "$root/$f"; done | paste -sd, -)
+"$root/mvnw" -q spotless:apply -DspotlessFiles="$patterns"
+git add -- $files

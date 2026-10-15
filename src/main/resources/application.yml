@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: challenge-sea
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/challenge_sea}
+    username: ${DB_USER:sea}
+    password: ${DB_PASSWORD:sea}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema; validate fails startup if an entity and its migration disagree
+      ddl-auto: validate
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
+  web:
+    # Bean Validation's built-in messages are user-facing, so they come out in pt-BR
+    locale: pt_BR
+    locale-resolver: fixed
+  data:
+    web:
+      pageable:
+        max-page-size: 100
+
+security:
+  jwt:
+    # Base64 HS256 key, at least 32 bytes. The default is for local runs only: set JWT_SECRET anywhere else
+    secret: ${JWT_SECRET:ZGV2LW9ubHktc2VjcmV0LWNoYW5nZS1tZS1pbi1wcm9kdWN0aW9uLTMyYg==}
+    ttl: ${JWT_TTL:PT1H}
+
+# The first ADMIN, created at startup only when no ADMIN exists and a password is set
+admin:
+  bootstrap:
+    email: ${ADMIN_EMAIL:admin@sea.local}
+    password: ${ADMIN_PASSWORD:admin12345}
+
+viacep:
+  base-url: ${VIACEP_BASE_URL:https://viacep.com.br/ws}
+  timeout: ${VIACEP_TIMEOUT:PT3S}
+
+springdoc:
+  swagger-ui:
+    # Keeps the Authorize login across page reloads
+    persist-authorization: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

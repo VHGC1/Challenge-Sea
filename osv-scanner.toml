@@ -1,0 +1,13 @@
+# Advisories the dependency audit skips (ci.yml passes this file with --config). Each entry needs a
+# reason saying why it cannot apply here and an ignoreUntil, after which the audit fails again.
+# Never ignore an advisory that applies: upgrade instead (README, "Vulnerability audit").
+
+[[IgnoredVulns]]
+id = "GHSA-pc63-qcmh-9cmg"
+ignoreUntil = 2027-01-06
+reason = "spring-webmvc XsltView path flaw: it needs an XsltView, and no code here renders XSLT views. Fixed only in Spring Framework 7, so the entry goes away with the Spring Boot 4 upgrade."
+
+[[IgnoredVulns]]
+id = "GHSA-j9f9-w8pj-32f8"
+ignoreUntil = 2027-01-06
+reason = "Spring MVC/WebFlux SSE stream corruption when rendering view fragments (CVE-2026-47890): it needs Server-Sent Events with view fragments, and no code here uses SseEmitter, ServerSentEvent or FragmentsRendering. No open-source 6.2.x fix (6.2.19 is the last release); fixed in Spring Framework 7.0.9, so the entry goes away with the Spring Boot 4 upgrade."
